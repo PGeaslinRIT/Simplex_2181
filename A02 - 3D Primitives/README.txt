@@ -1,0 +1,3 @@
+Patrick Geaslin - A02 3D Primitives
+
+Hello. I wanted to make a brief comment that my sphere primitive looks terrible and not very sphere like with insufficient subdivisions, and as such I adjusted appclass.cpp to default it to seven like the other primitives. Additionally, I increased the default maximum number of subdivisions to allow for prettier spheres. It does, however, create a full mesh with lower subdivision counts.

@@ -275,9 +275,35 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	//determine the interval between subdivisions
+	float intervals = 2.0f * PI / a_nSubdivisions;
+
+	//half height
+	float halfHeight = a_fHeight / 2.0f;
+
+	//store a vector pointing to the origin
+	vector3 baseCenter = vector3(0.0, 0.0, -1.0f * halfHeight);
+	vector3 peak = vector3(0.0, 0.0, halfHeight);
+
+	//add a triangle for each subdivision
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		//find the first point of the triangle
+		vector3 thisVertex = vector3(a_fRadius * cosf(i * intervals), a_fRadius * sinf(i*intervals), -1.0f * halfHeight);
+
+		//find the third point of the triangle
+		vector3 nextVertex = vector3(a_fRadius * cosf((i + 1) * intervals), a_fRadius * sinf((i + 1) *intervals), -1.0f * halfHeight);
+
+		//create a triangle and add its vertices to the vector
+		AddVertexPosition(baseCenter);
+		AddVertexPosition(thisVertex);
+		AddVertexPosition(nextVertex);
+
+		//add the exterior triangle pointing towards the peak
+		AddVertexPosition(thisVertex);
+		AddVertexPosition(peak);
+		AddVertexPosition(nextVertex);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -299,15 +325,52 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	//determine the interval between subdivisions
+	float intervals = 2.0f * PI / a_nSubdivisions;
+
+	//half height
+	float halfHeight = a_fHeight / 2.0f;
+
+	//store a vector pointing to the origin
+	vector3 base1Center = vector3(0.0, 0.0, -1.0f * halfHeight);
+	vector3 base2Center = vector3(0.0, 0.0, halfHeight);
+
+	//add a triangle for each subdivision
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		//find the first point of the triangle
+		vector3 thisBVertex = vector3(a_fRadius * cosf(i * intervals), a_fRadius * sinf(i*intervals), -1.0f * halfHeight);
+		vector3 thisTVertex = vector3(a_fRadius * cosf(i * intervals), a_fRadius * sinf(i*intervals), halfHeight);
+
+		//find the second point
+		vector3 nextBVertex = vector3(a_fRadius * cosf((i + 1) * intervals), a_fRadius * sinf((i + 1) *intervals), -1.0f * halfHeight);
+		vector3 nextTVertex = vector3(a_fRadius * cosf((i + 1) * intervals), a_fRadius * sinf((i + 1) *intervals), halfHeight);
+
+		//bottom base
+		AddVertexPosition(thisBVertex);
+		AddVertexPosition(base1Center);
+		AddVertexPosition(nextBVertex);
+
+		//top base
+		AddVertexPosition(base2Center);
+		AddVertexPosition(thisTVertex);
+		AddVertexPosition(nextTVertex);
+
+		//walls
+		AddVertexPosition(thisBVertex);
+		AddVertexPosition(nextBVertex);
+		AddVertexPosition(thisTVertex);
+
+		AddVertexPosition(nextTVertex);
+		AddVertexPosition(thisTVertex);
+		AddVertexPosition(nextBVertex);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
 	CompileOpenGL3X();
 }
-void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fHeight, int a_nSubdivisions, vector3 a_v3Color)
+void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fHeight, int a_nSubdivisions, vector3 a_v3Color) 
 {
 	if (a_fOuterRadius < 0.01f)
 		a_fOuterRadius = 0.01f;
@@ -329,9 +392,81 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	//determine the interval between subdivisions
+	float intervals = 2.0f * PI / a_nSubdivisions;
+
+	//half height
+	float halfHeight = a_fHeight / 2.0f;
+
+	//store a vector pointing to the origin
+	vector3 baseBCenter = vector3(0.0, 0.0, -1.0f * halfHeight);
+	vector3 baseTCenter = vector3(0.0, 0.0, halfHeight);
+
+	//add a triangle for each subdivision
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		//find the first point of the triangle
+		vector3 thisOuterBVertex = vector3(a_fOuterRadius * cosf(i * intervals), a_fOuterRadius * sinf(i*intervals), -1.0f * halfHeight);
+		vector3 thisOuterTVertex = vector3(a_fOuterRadius * cosf(i * intervals), a_fOuterRadius * sinf(i*intervals), halfHeight);
+		vector3 thisInnerBVertex = vector3(a_fInnerRadius * cosf(i * intervals), a_fInnerRadius * sinf(i*intervals), -1.0f * halfHeight);
+		vector3 thisInnerTVertex = vector3(a_fInnerRadius * cosf(i * intervals), a_fInnerRadius * sinf(i*intervals), halfHeight);
+
+		//find the third point of the triangle, wrapping to the beginning of the subdivisions if necessary
+		vector3 nextOuterBVertex;
+		vector3 nextOuterTVertex;
+		vector3 nextInnerBVertex;
+		vector3 nextInnerTVertex;
+		if (i + 1 == a_nSubdivisions)
+		{
+			nextOuterBVertex = vector3(a_fOuterRadius * cosf(0.0f), a_fOuterRadius * sinf(0.0f), -1.0f * halfHeight);
+			nextOuterTVertex = vector3(a_fOuterRadius * cosf(0.0f), a_fOuterRadius * sinf(0.0f), halfHeight);
+			nextInnerBVertex = vector3(a_fInnerRadius * cosf(0.0f), a_fInnerRadius * sinf(0.0f), -1.0f * halfHeight);
+			nextInnerTVertex = vector3(a_fInnerRadius * cosf(0.0f), a_fInnerRadius * sinf(0.0f), halfHeight);
+		}
+		else
+		{
+			nextOuterBVertex = vector3(a_fOuterRadius * cosf((i + 1) * intervals), a_fOuterRadius * sinf((i + 1) * intervals), -1.0f * halfHeight);
+			nextOuterTVertex = vector3(a_fOuterRadius * cosf((i + 1) * intervals), a_fOuterRadius * sinf((i + 1) * intervals), halfHeight);
+			nextInnerBVertex = vector3(a_fInnerRadius * cosf((i + 1) * intervals), a_fInnerRadius * sinf((i + 1) * intervals), -1.0f * halfHeight);
+			nextInnerTVertex = vector3(a_fInnerRadius * cosf((i + 1) * intervals), a_fInnerRadius * sinf((i + 1) * intervals), halfHeight);
+		}
+
+		//bottom base
+		AddVertexPosition(thisOuterBVertex);
+		AddVertexPosition(thisInnerBVertex);
+		AddVertexPosition(nextOuterBVertex);
+
+		AddVertexPosition(nextOuterBVertex);
+		AddVertexPosition(thisInnerBVertex);
+		AddVertexPosition(nextInnerBVertex);
+
+		//top base
+		AddVertexPosition(nextOuterTVertex);
+		AddVertexPosition(thisInnerTVertex);
+		AddVertexPosition(thisOuterTVertex);
+
+		AddVertexPosition(nextInnerTVertex);
+		AddVertexPosition(thisInnerTVertex);
+		AddVertexPosition(nextOuterTVertex);
+
+		//inner wall
+		AddVertexPosition(nextInnerTVertex);
+		AddVertexPosition(thisInnerBVertex);
+		AddVertexPosition(thisInnerTVertex);
+
+		AddVertexPosition(thisInnerBVertex);
+		AddVertexPosition(nextInnerTVertex);
+		AddVertexPosition(nextInnerBVertex);
+
+		//outer wall
+		AddVertexPosition(thisOuterTVertex);
+		AddVertexPosition(thisOuterBVertex);
+		AddVertexPosition(nextOuterTVertex);
+
+		AddVertexPosition(nextOuterBVertex);
+		AddVertexPosition(nextOuterTVertex);
+		AddVertexPosition(thisOuterBVertex);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -380,15 +515,86 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 		GenerateCube(a_fRadius * 2.0f, a_v3Color);
 		return;
 	}
-	if (a_nSubdivisions > 6)
-		a_nSubdivisions = 6;
+	if (a_nSubdivisions > 12)
+		a_nSubdivisions = 12;
 
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	//determine the interval between subdivisions
+	float interval = 2.0f * PI / a_nSubdivisions;
+	float halfInt = interval / 2.0f;
+
+	//store a vector pointing to the origin
+	vector3 bottomPoint = vector3(0.0, 0.0, -1.0f * a_fRadius);
+	vector3 topPoint = vector3(0.0, 0.0, a_fRadius);
+
+	//add a triangle for each subdivision
+	for (int i = 0; i < a_nSubdivisions; i++)
+	{
+		//find the first point on the caps
+		vector3 thisTVertex = a_fRadius * vector3(
+			cosf(i * interval) * sinf(halfInt),
+			sinf(i * interval) * sinf(halfInt),
+			cos(halfInt));
+		vector3 thisBVertex = a_fRadius * vector3(
+			cosf(i * interval) * sinf(halfInt),
+			sinf(i * interval) * sinf(halfInt),
+			-1.0f * cos(halfInt));
+
+		//find the second point on the caps
+		vector3 nextTVertex = a_fRadius * vector3(
+			cosf((i + 1) * interval) * sinf(halfInt),
+			sinf((i + 1) * interval) * sinf(halfInt),
+			cos(halfInt));
+		vector3 nextBVertex = a_fRadius * vector3(
+			cosf((i + 1) * interval) * sinf(halfInt),
+			sinf((i + 1) * interval) * sinf(halfInt),
+			-1.0f * cos(halfInt));
+
+		//create the walls for the quadrangle faces
+		for (int j = 1; j < a_nSubdivisions - 1; j++)
+		{
+			//find the first pair of points
+			vector3 thisTFaceVertex = a_fRadius * vector3(
+				cosf(i * interval) * sinf(j * halfInt),
+				sinf(i * interval) * sinf(j * halfInt),
+				cos(j * halfInt));
+			vector3 thisBFaceVertex = a_fRadius * vector3(
+				cosf(i * interval) * sinf((j + 1) * halfInt),
+				sinf(i * interval) * sinf((j + 1) * halfInt),
+				cos((j + 1) * halfInt));
+
+			//find the second pair of points
+			vector3 nextTFaceVertex = a_fRadius * vector3(
+				cosf((i + 1) * interval) * sinf(j * halfInt),
+				sinf((i + 1) * interval) * sinf(j * halfInt),
+				cos(j * halfInt));
+			vector3 nextBFaceVertex = a_fRadius * vector3(
+				cosf((i + 1) * interval) * sinf((j + 1) * halfInt),
+				sinf((i + 1) * interval) * sinf((j + 1) * halfInt),
+				cos((j + 1) * halfInt));
+
+			//add triangles
+			AddVertexPosition(thisBFaceVertex);
+			AddVertexPosition(nextTFaceVertex);
+			AddVertexPosition(thisTFaceVertex);
+
+			AddVertexPosition(nextTFaceVertex);
+			AddVertexPosition(thisBFaceVertex);
+			AddVertexPosition(nextBFaceVertex);
+		}
+
+		//top ring
+		AddVertexPosition(thisTVertex);
+		AddVertexPosition(nextTVertex);
+		AddVertexPosition(topPoint);
+
+		//bottom ring
+		AddVertexPosition(bottomPoint);
+		AddVertexPosition(nextBVertex);
+		AddVertexPosition(thisBVertex);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
