@@ -295,14 +295,10 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 		vector3 nextVertex = vector3(a_fRadius * cosf((i + 1) * intervals), a_fRadius * sinf((i + 1) *intervals), -1.0f * halfHeight);
 
 		//create a triangle and add its vertices to the vector
-		AddVertexPosition(baseCenter);
-		AddVertexPosition(thisVertex);
-		AddVertexPosition(nextVertex);
+		AddTri(baseCenter, thisVertex, nextVertex);
 
 		//add the exterior triangle pointing towards the peak
-		AddVertexPosition(thisVertex);
-		AddVertexPosition(peak);
-		AddVertexPosition(nextVertex);
+		AddTri(thisVertex, peak, nextVertex);
 	}
 
 	// Adding information about color
@@ -332,8 +328,8 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	float halfHeight = a_fHeight / 2.0f;
 
 	//store a vector pointing to the origin
-	vector3 base1Center = vector3(0.0, 0.0, -1.0f * halfHeight);
-	vector3 base2Center = vector3(0.0, 0.0, halfHeight);
+	vector3 baseBCenter = vector3(0.0, 0.0, -1.0f * halfHeight);
+	vector3 baseTCenter = vector3(0.0, 0.0, halfHeight);
 
 	//add a triangle for each subdivision
 	for (int i = 0; i < a_nSubdivisions; i++)
@@ -347,23 +343,13 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 		vector3 nextTVertex = vector3(a_fRadius * cosf((i + 1) * intervals), a_fRadius * sinf((i + 1) *intervals), halfHeight);
 
 		//bottom base
-		AddVertexPosition(thisBVertex);
-		AddVertexPosition(base1Center);
-		AddVertexPosition(nextBVertex);
+		AddTri(thisBVertex, baseBCenter, nextBVertex);
 
 		//top base
-		AddVertexPosition(base2Center);
-		AddVertexPosition(thisTVertex);
-		AddVertexPosition(nextTVertex);
+		AddTri(baseTCenter, thisTVertex, nextTVertex);
 
 		//walls
-		AddVertexPosition(thisBVertex);
-		AddVertexPosition(nextBVertex);
-		AddVertexPosition(thisTVertex);
-
-		AddVertexPosition(nextTVertex);
-		AddVertexPosition(thisTVertex);
-		AddVertexPosition(nextBVertex);
+		AddQuad(thisBVertex, nextBVertex, thisTVertex, nextTVertex);
 	}
 
 	// Adding information about color
@@ -432,40 +418,16 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 		}
 
 		//bottom base
-		AddVertexPosition(thisOuterBVertex);
-		AddVertexPosition(thisInnerBVertex);
-		AddVertexPosition(nextOuterBVertex);
-
-		AddVertexPosition(nextOuterBVertex);
-		AddVertexPosition(thisInnerBVertex);
-		AddVertexPosition(nextInnerBVertex);
+		AddQuad(thisOuterBVertex, thisInnerBVertex, nextOuterBVertex, nextInnerBVertex);
 
 		//top base
-		AddVertexPosition(nextOuterTVertex);
-		AddVertexPosition(thisInnerTVertex);
-		AddVertexPosition(thisOuterTVertex);
-
-		AddVertexPosition(nextInnerTVertex);
-		AddVertexPosition(thisInnerTVertex);
-		AddVertexPosition(nextOuterTVertex);
+		AddQuad(nextOuterTVertex, nextInnerTVertex, thisOuterTVertex, thisInnerTVertex);
 
 		//inner wall
-		AddVertexPosition(nextInnerTVertex);
-		AddVertexPosition(thisInnerBVertex);
-		AddVertexPosition(thisInnerTVertex);
-
-		AddVertexPosition(thisInnerBVertex);
-		AddVertexPosition(nextInnerTVertex);
-		AddVertexPosition(nextInnerBVertex);
+		AddQuad(nextInnerTVertex, nextInnerBVertex, thisInnerTVertex, thisInnerBVertex);
 
 		//outer wall
-		AddVertexPosition(thisOuterTVertex);
-		AddVertexPosition(thisOuterBVertex);
-		AddVertexPosition(nextOuterTVertex);
-
-		AddVertexPosition(nextOuterBVertex);
-		AddVertexPosition(nextOuterTVertex);
-		AddVertexPosition(thisOuterBVertex);
+		AddQuad(thisOuterBVertex, nextOuterBVertex, thisOuterTVertex, nextOuterTVertex);
 	}
 
 	// Adding information about color
@@ -552,7 +514,7 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 			sinf((i + 1) * interval) * sinf(halfInt),
 			-1.0f * cos(halfInt));
 
-		//create the walls for the quadrangle faces
+		//create the walls for the quad faces, moving along the subdivision from top to bottom
 		for (int j = 1; j < a_nSubdivisions - 1; j++)
 		{
 			//find the first pair of points
@@ -575,25 +537,15 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 				sinf((i + 1) * interval) * sinf((j + 1) * halfInt),
 				cos((j + 1) * halfInt));
 
-			//add triangles
-			AddVertexPosition(thisBFaceVertex);
-			AddVertexPosition(nextTFaceVertex);
-			AddVertexPosition(thisTFaceVertex);
-
-			AddVertexPosition(nextTFaceVertex);
-			AddVertexPosition(thisBFaceVertex);
-			AddVertexPosition(nextBFaceVertex);
+			//add quad faces
+			AddQuad(nextBFaceVertex, nextTFaceVertex, thisBFaceVertex, thisTFaceVertex);
 		}
 
 		//top ring
-		AddVertexPosition(thisTVertex);
-		AddVertexPosition(nextTVertex);
-		AddVertexPosition(topPoint);
+		AddTri(thisTVertex, nextTVertex, topPoint);
 
 		//bottom ring
-		AddVertexPosition(bottomPoint);
-		AddVertexPosition(nextBVertex);
-		AddVertexPosition(thisBVertex);
+		AddTri(bottomPoint, nextBVertex, thisBVertex);
 	}
 
 	// Adding information about color
