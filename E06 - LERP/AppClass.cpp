@@ -2,7 +2,7 @@
 void Application::InitVariables(void)
 {
 	//Change this to your name and email
-	m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
+	m_sProgrammer = "Patrick Geaslin - pxg6350@rit.edu";
 
 	//Set the position and target of the camera
 	m_pCameraMngr->SetPositionTargetAndUpward(vector3(5.0f,3.0f,15.0f), ZERO_V3, AXIS_Y);
@@ -59,7 +59,38 @@ void Application::Display(void)
 
 
 	//your code goes here
-	v3CurrentPos = vector3(0.0f, 0.0f, 0.0f);
+	//vertex limit
+	static uint uVertexMax = m_stopsList.size();
+
+	//get starting and ending vertices for this section. Wrap to the first vertex if at the end of the list
+	static uint uVertexCount = 0;
+	vector3 startVertex = m_stopsList[uVertexCount];
+	vector3 endVertex;
+	if (uVertexCount + 1 >= uVertexMax)
+	{
+		endVertex = m_stopsList[0];
+	}
+	else
+	{
+		endVertex = m_stopsList[uVertexCount + 1];
+	}
+
+	//determine percent along segment to move
+	float fPercentage = static_cast<float>(MapValue(fTimer, 0.0f, 2.0f, 0.0f, 1.0f));
+
+	//determine current position
+	v3CurrentPos = glm::lerp(startVertex, endVertex, fPercentage);
+
+	//start next segment if the previous is completed
+	if (fPercentage >= 1.0f)
+	{
+		uVertexCount++;
+		if (uVertexCount >= uVertexMax)
+		{
+			uVertexCount = 0;
+		}
+		fTimer = m_pSystem->GetDeltaTime(uClock);
+	}
 	//-------------------
 	
 
