@@ -2,7 +2,7 @@
 void Application::InitVariables(void)
 {
 	//Change this to your name and email
-	m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
+	m_sProgrammer = "Patrick Geaslin - pxg6350@rit.edu";
 	
 	//Set the position and target of the camera
 	//(I'm at [0,0,10], looking at [0,0,0] and up is the positive Y axis)
@@ -36,6 +36,22 @@ void Application::InitVariables(void)
 	{
 		vector3 v3Color = WaveLengthToRGB(uColor); //calculate color based on wavelength
 		m_shapeList.push_back(m_pMeshMngr->GenerateTorus(fSize, fSize - 0.1f, 3, i, v3Color)); //generate a custom torus and add it to the meshmanager
+		
+		//generate vertices for each orbit
+		std::vector<vector3> points;
+		float angleIncrement = 2.0f * PI / i; //angle difference between each point 
+		//float startAngle = PI / 2.0f; //starting offset for angle
+		float startAngle = 0.0f;
+		for (uint j = 0; j < i; j++)
+		{
+			float angle = j * angleIncrement + startAngle; //angle used for this point
+
+			vector3 thisPoint(fSize * cosf(angle), fSize * sinf(angle), 0.0f); //x and y position of this vector
+			points.push_back(thisPoint); //add point to list of points for this orbit
+		}
+		pointsList.push_back(points); //add list of points for this orbit to list of all orbits
+
+		
 		fSize += 0.5f; //increment the size for the next orbit
 		uColor -= static_cast<uint>(decrements); //decrease the wavelength
 	}
@@ -62,19 +78,71 @@ void Application::Display(void)
 	/*
 		The following offset will orient the orbits as in the demo, start without it to make your life easier.
 	*/
-	//m4Offset = glm::rotate(IDENTITY_M4, 1.5708f, AXIS_Z);
+	m4Offset = glm::rotate(IDENTITY_M4, 1.5708f, AXIS_Z);
 
 	// draw a shapes
+
+	//Get a timer
+	static float fTimer = 0;	//store the new timer
+	static uint uClock = m_pSystem->GenClock(); //generate a new clock for that timer
+	fTimer += m_pSystem->GetDeltaTime(uClock); //get the delta time for that timer
+
+	//create a vector for current position
+	vector3 v3CurrentPos = ZERO_V3;
+
+	//vertex counts for each orbit
+	static std::vector<uint> uVertexCount;
+	for (uint i = 0; i < m_uOrbits; i++)
+	{
+		uVertexCount.push_back(0);
+	}
+
+	//determine percent along segment to move
+	float fPercentage = static_cast<float>(MapValue(fTimer, 0.0f, 1.0f, 0.0f, 1.5f));
+
+	//draw current location on each orbit
 	for (uint i = 0; i < m_uOrbits; ++i)
 	{
 		m_pMeshMngr->AddMeshToRenderList(m_shapeList[i], glm::rotate(m4Offset, 1.5708f, AXIS_X));
 
 		//calculate the current position
-		vector3 v3CurrentPos = ZERO_V3;
+        std::vector<vector3> thisOrbit = pointsList[i];
+
+        //vertex limit
+        uint uVertexMax = pointsList[i].size();
+
+        //get starting and ending vertices for this section. Wrap to the first vertex if at the end of the list
+        vector3 startVertex = thisOrbit[uVertexCount[i]];
+        vector3 endVertex;
+        if (uVertexCount[i] + 1 >= uVertexMax)
+        {
+            endVertex = thisOrbit[0];
+        }
+        else
+        {
+            endVertex = thisOrbit[uVertexCount[i] + 1];
+        }
+
+        //determine current position
+        v3CurrentPos = glm::lerp(startVertex, endVertex, fPercentage);
 		matrix4 m4Model = glm::translate(m4Offset, v3CurrentPos);
 
 		//draw spheres
 		m_pMeshMngr->AddSphereToRenderList(m4Model * glm::scale(vector3(0.1)), C_WHITE);
+	}
+
+	//start next segment if the previous is completed
+	if (fPercentage >= 1.0f)
+	{
+		for (uint i = 0; i < m_uOrbits; i++)
+		{
+			uVertexCount[i]++;
+			if (uVertexCount[i] >= pointsList[i].size())
+			{
+				uVertexCount[i] = 0;
+			}
+		}
+		fTimer = m_pSystem->GetDeltaTime(uClock);
 	}
 
 	//render list call
