@@ -18,7 +18,9 @@ class Application
 	quaternion m_qOrientation;
 	vector3 m_v3Rotation;
 	MyMesh* m_pMesh = nullptr;
-	String m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
+	String m_sProgrammer = "Patrick Geaslin - pxg6350@rit.edu";
+
+	float m_RotationAngle = 1.0f; //rotation angle for quaternion increments
 
 private:
 	static ImGuiObject gui; //GUI object
