@@ -46,6 +46,7 @@ void Application::Display(void)
 	m_pMeshMngr->AddSkyboxToRenderList();
 
 	//calculate view and projection
+	float planeSize;
 	switch (m_uProjection)
 	{
 	default:
@@ -54,21 +55,60 @@ void Application::Display(void)
 		break;
 	case 2:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(false);
+		m_pCamera->SetPositionTargetAndUpward(
+			vector3(0.0f, 0.0f, 5.0f), 
+			vector3(0.0f, 0.0f, 0.0f), 
+			vector3(0.0f, 1.0f, 0.0f));
 		break;
 	case 3:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(true);
+		m_pCamera->SetPositionTargetAndUpward(
+			vector3(20.0f, 0.0f, 0.0f),
+			vector3(0.0f, 0.0f, 0.0f),
+			vector3(0.0f, 0.0f, -1.0f));
+		planeSize = 30.0f;
+		m_pCamera->SetHorizontalPlanes(vector2(-planeSize, planeSize));
+		m_pCamera->SetVerticalPlanes(vector2(-planeSize, planeSize));
 		break;
 	case 4:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(true);
+		m_pCamera->SetPositionTargetAndUpward(
+			vector3(0.0f, 0.0f, -15.0f),
+			vector3(0.0f, 0.0f, 0.0f),
+			vector3(0.0f, 1.0f, 0.0f));
+		planeSize = 15.0f;
+		m_pCamera->SetHorizontalPlanes(vector2(-planeSize, planeSize));
+		m_pCamera->SetVerticalPlanes(vector2(-planeSize, planeSize));
 		break;
 	case 5:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(true);
+		m_pCamera->SetPositionTargetAndUpward(
+			vector3(0.0f, 0.0f, -15.0f),
+			vector3(0.0f, 0.0f, 0.0f),
+			vector3(0.0f, 1.0f, 0.0f));
+		planeSize = 15.0f;
+		m_pCamera->SetHorizontalPlanes(vector2(-planeSize, planeSize));
+		m_pCamera->SetVerticalPlanes(vector2(-planeSize, planeSize));
 		break;
 	case 6:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(false);
+		m_pCamera->SetPositionTargetAndUpward(
+			vector3(0.0f, 0.0f, 0.0f),
+			vector3(0.0f, 0.0f, 0.0f),
+			vector3(0.0f, 1.0f, 0.0f));
 		break;
 	case 7:
 		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(false);
+		m_pCamera->SetPositionTargetAndUpward(
+			vector3(0.0f, 0.0f, 5.0f),
+			vector3(0.0f, 0.0f, 0.0f),
+			vector3(0.0f, -1.0f, 0.0f));
 		break;
 	}
 
