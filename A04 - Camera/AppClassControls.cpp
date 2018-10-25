@@ -8,9 +8,14 @@ void Application::ProcessMouseMovement(sf::Event a_event)
 	sf::Vector2i window = m_pWindow->getPosition();
 	m_v3Mouse.x = static_cast<float>(mouse.x - window.x);
 	m_v3Mouse.y = static_cast<float>(mouse.y - window.y);
-	if(!m_pSystem->IsWindowFullscreen() && !m_pSystem->IsWindowBorderless())
+	if (!m_pSystem->IsWindowFullscreen() && !m_pSystem->IsWindowBorderless())
 		m_v3Mouse += vector3(-8.0f, -32.0f, 0.0f);
 	gui.io.MousePos = ImVec2(m_v3Mouse.x, m_v3Mouse.y);
+
+	if (gui.io.MouseDown[2]) //rotate camera only if right mouse button is down
+	{
+		CameraRotation(0.0001f);
+	}
 }
 void Application::ProcessMousePressed(sf::Event a_event)
 {
@@ -67,10 +72,25 @@ void Application::ProcessMouseScroll(sf::Event a_event)
 //Keyboard
 void Application::ProcessKeyPressed(sf::Event a_event)
 {
+	//amount to move the camera on key press
+	float moveDistance = 0.01f;
+
 	switch (a_event.key.code)
 	{
 	default: break;
 	case sf::Keyboard::Space:
+		break;
+	case sf::Keyboard::W:
+		m_pCamera->MoveForward(moveDistance);
+		break;
+	case sf::Keyboard::A:
+		m_pCamera->MoveSideways(-1.0f * moveDistance * 10.0f);
+		break;
+	case sf::Keyboard::S:
+		m_pCamera->MoveForward(-1.0f * moveDistance);
+		break;
+	case sf::Keyboard::D:
+		m_pCamera->MoveSideways(moveDistance * 10.0f);
 		break;
 	}
 	//gui
@@ -370,6 +390,9 @@ void Application::CameraRotation(float a_fSpeed)
 	}
 	//Change the Yaw and the Pitch of the camera
 	SetCursorPos(CenterX, CenterY);//Position the mouse in the center
+
+	m_pCamera->RotateHorizontally(fAngleX);
+	//m_pCamera->RotateVertically(fAngleY);
 }
 //Keyboard
 void Application::ProcessKeyboard(void)
