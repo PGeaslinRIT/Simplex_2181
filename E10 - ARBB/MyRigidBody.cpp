@@ -84,9 +84,54 @@ void MyRigidBody::SetModelMatrix(matrix4 a_m4ModelMatrix)
 
 	m_m4ToWorld = a_m4ModelMatrix;
 	
-	//your code goes here---------------------
-	m_v3MinG = m_v3MinL;
-	m_v3MaxG = m_v3MaxL;
+	//your code goes here---------------------s
+	//get vertices of bounding box in global space
+	vector3 vertices[8] = {
+		vector3(a_m4ModelMatrix * vector4(m_v3MinL, 1.0f)),
+		vector3(a_m4ModelMatrix * vector4(m_v3MaxL, 1.0f)),
+
+		vector3(a_m4ModelMatrix * vector4(m_v3MaxL.x, m_v3MinL.y, m_v3MinL.z, 1.0f)),
+		vector3(a_m4ModelMatrix * vector4(m_v3MinL.x, m_v3MaxL.y, m_v3MaxL.z, 1.0f)),
+
+		vector3(a_m4ModelMatrix * vector4(m_v3MaxL.x, m_v3MinL.y, m_v3MaxL.z, 1.0f)),
+		vector3(a_m4ModelMatrix * vector4(m_v3MinL.x, m_v3MaxL.y, m_v3MinL.z, 1.0f)),
+
+		vector3(a_m4ModelMatrix * vector4(m_v3MaxL.x, m_v3MaxL.y, m_v3MinL.z, 1.0f)),
+		vector3(a_m4ModelMatrix * vector4(m_v3MinL.x, m_v3MinL.y, m_v3MaxL.z, 1.0f)),
+	};
+
+	//find minimum and maximum vertex components
+	m_v3MaxG = vertices[0];
+	m_v3MinG = vertices[0];
+	for (int i = 0; i < 8; i++) 
+	{
+		if (m_v3MaxG.x < vertices[i].x)
+		{
+			m_v3MaxG.x = vertices[i].x;
+		}
+		if (m_v3MaxG.y < vertices[i].y)
+		{
+			m_v3MaxG.y = vertices[i].y;
+		}
+		if (m_v3MaxG.z < vertices[i].z)
+		{
+			m_v3MaxG.z = vertices[i].z;
+		}
+
+		if (m_v3MinG.x > vertices[i].x)
+		{
+			m_v3MinG.x = vertices[i].x;
+		}
+		if (m_v3MinG.y > vertices[i].y)
+		{
+			m_v3MinG.y = vertices[i].y;
+		}
+		if (m_v3MinG.z > vertices[i].z)
+		{
+			m_v3MinG.z = vertices[i].z;
+		}
+	}
+
 	//----------------------------------------
 
 	//we calculate the distance between min and max vectors
