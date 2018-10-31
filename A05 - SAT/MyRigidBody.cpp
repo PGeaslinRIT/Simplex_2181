@@ -287,6 +287,100 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	(eSATResults::SAT_NONE has a value of 0)
 	*/
 
+	//get all vertices of rigidbodies
+	//this rigid body's corners
+	vector3 thisRBVertices[8];
+
+	thisRBVertices[0] = m_v3MinL;
+	thisRBVertices[1] = vector3(m_v3MaxL.x, m_v3MinL.y, m_v3MinL.z);
+	thisRBVertices[2] = vector3(m_v3MinL.x, m_v3MaxL.y, m_v3MinL.z);
+	thisRBVertices[3] = vector3(m_v3MaxL.x, m_v3MaxL.y, m_v3MinL.z);
+	thisRBVertices[4] = vector3(m_v3MinL.x, m_v3MinL.y, m_v3MaxL.z);
+	thisRBVertices[5] = vector3(m_v3MaxL.x, m_v3MinL.y, m_v3MaxL.z);
+	thisRBVertices[6] = vector3(m_v3MinL.x, m_v3MaxL.y, m_v3MaxL.z);
+	thisRBVertices[7] = m_v3MaxL;
+
+	//other rigid body's corners
+	vector3 otherRBVertices[8];
+
+	otherRBVertices[0] = a_pOther->GetMinLocal();
+	otherRBVertices[1] = vector3(a_pOther->GetMaxLocal().x, a_pOther->GetMinLocal().y, a_pOther->GetMinLocal().z);
+	otherRBVertices[2] = vector3(a_pOther->GetMinLocal().x, a_pOther->GetMaxLocal().y, a_pOther->GetMinLocal().z);
+	otherRBVertices[3] = vector3(a_pOther->GetMaxLocal().x, a_pOther->GetMaxLocal().y, a_pOther->GetMinLocal().z);
+	otherRBVertices[4] = vector3(a_pOther->GetMinLocal().x, a_pOther->GetMinLocal().y, a_pOther->GetMaxLocal().z);
+	otherRBVertices[5] = vector3(a_pOther->GetMaxLocal().x, a_pOther->GetMinLocal().y, a_pOther->GetMaxLocal().z);
+	otherRBVertices[6] = vector3(a_pOther->GetMinLocal().x, a_pOther->GetMaxLocal().y, a_pOther->GetMaxLocal().z);
+	otherRBVertices[7] = a_pOther->GetMaxLocal();
+
+	//convert corners to global space
+	for (int i = 0; i < 8; i++)
+	{
+		thisRBVertices[i] = vector3(m_m4ToWorld * vector4(thisRBVertices[i], 0.0f));
+		otherRBVertices[i] = vector3(a_pOther->GetModelMatrix() * vector4(otherRBVertices[i], 0.0f));
+	}
+
+	//find all fifteen axes to check
+	vector3 axes[15];
+	//  find each of the three axes per rigidy body
+	axes[0] = vector3(m_v3MaxL.x, m_v3Center.y, m_v3Center.z);
+	axes[1] = vector3(m_v3Center.x, m_v3MaxL.y, m_v3Center.z);
+	axes[2] = vector3(m_v3Center.x, m_v3Center.y, m_v3MaxL.z);
+	axes[3] = vector3(a_pOther->GetMaxLocal().x, a_pOther->GetCenterLocal().y, a_pOther->GetCenterLocal().z);
+	axes[4] = vector3(a_pOther->GetCenterLocal().x, a_pOther->GetMaxLocal().y, a_pOther->GetCenterLocal().z);
+	axes[5] = vector3(a_pOther->GetCenterLocal().x, a_pOther->GetCenterLocal().y, a_pOther->GetMaxLocal().z);
+
+	//convert axes to global space
+	for (int i = 0; i < 3; i++)
+	{
+		axes[i] = glm::normalize(vector3(m_m4ToWorld * vector4(axes[i], 0.0f)));
+		axes[i + 3] = glm::normalize(vector3(a_pOther->GetModelMatrix() * vector4(axes[i + 3], 0.0f)));
+	}
+
+	//  find cross products of each rigidbody's set of three
+	int thisIndex = 6;
+	for (int i = 0; i < 3; i++) 
+	{
+		for (int j = 3; j < 6; j++) 
+		{
+			axes[thisIndex] = glm::normalize(glm::cross(axes[i], axes[j]));
+
+			thisIndex++;
+		}
+	}
+
+	//check each axis for collision
+	for (uint i = 0; i < 15; i++)
+	{
+		//  find  min/max projection for each rigid body onto axis
+		float thisMin = glm::dot(thisRBVertices[0], axes[i]);
+		float thisMax = glm::dot(thisRBVertices[0], axes[i]);
+		float otherMin = glm::dot(otherRBVertices[0], axes[i]);
+		float otherMax = glm::dot(otherRBVertices[0], axes[i]);
+
+		for (int j = 1; j < 8; j++)
+		{
+			float thisTest = glm::dot(thisRBVertices[j], axes[i]);
+			float otherTest = glm::dot(otherRBVertices[j], axes[i]);
+
+			if (thisTest > thisMax)
+				thisMax = thisTest;
+			else if (thisTest < thisMin)
+				thisMin = thisTest;
+
+			if (otherTest > otherMax)
+				otherMax = otherTest;
+			else if (otherTest < otherMin)
+				otherMin = otherTest;
+		}
+
+		//check for gap between projections
+		if (thisMax < otherMin || otherMax < otherMin)
+		{
+			//no overlap returns the plane, otherwise continue testing
+			return i + 1;
+		}
+	}
+
 	//there is no axis test that separates this two objects
 	return eSATResults::SAT_NONE;
 }
