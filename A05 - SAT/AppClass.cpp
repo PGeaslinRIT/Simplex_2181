@@ -41,6 +41,7 @@ void Application::Update(void)
 	m_pMeshMngr->AddAxisToRenderList(mCreeper);
 
 	//Set model matrix to Steve
+	//matrix4 mSteve = glm::translate(vector3(3.0f, 0.0f, 0.0f));
 	matrix4 mSteve = glm::translate(vector3(2.25f, 0.0f, 0.0f)) * glm::rotate(IDENTITY_M4, glm::radians(-55.0f), AXIS_Z);
 	m_pSteve->SetModelMatrix(mSteve);
 	m_pSteveRB->SetModelMatrix(mSteve);

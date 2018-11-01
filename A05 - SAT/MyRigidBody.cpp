@@ -1,4 +1,7 @@
 #include "MyRigidBody.h"
+
+#include <iostream>
+
 using namespace Simplex;
 //Allocation
 void MyRigidBody::Init(void)
@@ -276,110 +279,129 @@ void MyRigidBody::AddToRenderList(void)
 
 uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 {
-	/*
-	Your code goes here instead of this comment;
+	float radiusA, radiusB;
+	vector3 axesA[3];
+	vector3 axesB[3];
+	float extentsA[3];
+	float extentsB[3];
+	matrix3 rotationBtoA;
+	matrix3 absRotationBtoA;
+	float epsilon = 0.00000001f;
 
-	For this method, if there is an axis that separates the two objects
-	then the return will be different than 0; 1 for any separating axis
-	is ok if you are not going for the extra credit, if you could not
-	find a separating axis you need to return 0, there is an enum in
-	Simplex that might help you [eSATResults] feel free to use it.
-	(eSATResults::SAT_NONE has a value of 0)
-	*/
+	//axes for this rigid body
+	axesA[0] = glm::normalize(vector4(vector3(1.0f, 0.0f, 0.0f), 0.0f) * m_m4ToWorld);
+	axesA[1] = glm::normalize(vector4(vector3(0.0f, 1.0f, 0.0f), 0.0f) * m_m4ToWorld);
+	axesA[2] = glm::normalize(vector4(vector3(0.0f, 0.0f, 1.0f), 0.0f) * m_m4ToWorld);
 
-	//get all vertices of rigidbodies
-	//this rigid body's corners
-	vector3 thisRBVertices[8];
+	//axes for other rigid body
+	//axesB[0] = glm::normalize(vector4(vector3(1.0f, 0.0f, 0.0f), 0.0f) * a_pOther->GetModelMatrix());
+	//axesB[1] = glm::normalize(vector4(vector3(0.0f, 1.0f, 0.0f), 0.0f) * a_pOther->GetModelMatrix());
+	//axesB[2] = glm::normalize(vector4(vector3(0.0f, 0.0f, 1.0f), 0.0f) * a_pOther->GetModelMatrix());
+	axesB[0] = glm::normalize(vector4(a_pOther->GetMaxLocal().x, a_pOther->GetCenterLocal().y, a_pOther->GetCenterLocal().z, 0.0f) * a_pOther->GetModelMatrix());
+	axesB[1] = glm::normalize(vector4(a_pOther->GetCenterLocal().x, a_pOther->GetMaxLocal().y, a_pOther->GetCenterLocal().z, 0.0f) * a_pOther->GetModelMatrix());
+	axesB[2] = glm::normalize(vector4(a_pOther->GetCenterLocal().x, a_pOther->GetCenterLocal().y, a_pOther->GetMaxLocal().z, 0.0f) * a_pOther->GetModelMatrix());
 
-	thisRBVertices[0] = m_v3MinL;
-	thisRBVertices[1] = vector3(m_v3MaxL.x, m_v3MinL.y, m_v3MinL.z);
-	thisRBVertices[2] = vector3(m_v3MinL.x, m_v3MaxL.y, m_v3MinL.z);
-	thisRBVertices[3] = vector3(m_v3MaxL.x, m_v3MaxL.y, m_v3MinL.z);
-	thisRBVertices[4] = vector3(m_v3MinL.x, m_v3MinL.y, m_v3MaxL.z);
-	thisRBVertices[5] = vector3(m_v3MaxL.x, m_v3MinL.y, m_v3MaxL.z);
-	thisRBVertices[6] = vector3(m_v3MinL.x, m_v3MaxL.y, m_v3MaxL.z);
-	thisRBVertices[7] = m_v3MaxL;
+	//halfwidth extents for this rigid body
+	vector3 wExtentsA = vector3(vector4(m_v3HalfWidth, 0.0f) * m_m4ToWorld);
+	extentsA[0] = wExtentsA.x;
+	extentsA[1] = wExtentsA.y;
+	extentsA[2] = wExtentsA.z;
 
-	//other rigid body's corners
-	vector3 otherRBVertices[8];
+	//halfwidth extents for other rigid body
+	vector3 wExtentsB = vector3(vector4(a_pOther->GetHalfWidth(), 0.0f) * a_pOther->GetModelMatrix());
+	extentsB[0] = wExtentsB.x;
+	extentsB[1] = wExtentsB.y;
+	extentsB[2] = wExtentsB.z;
 
-	otherRBVertices[0] = a_pOther->GetMinLocal();
-	otherRBVertices[1] = vector3(a_pOther->GetMaxLocal().x, a_pOther->GetMinLocal().y, a_pOther->GetMinLocal().z);
-	otherRBVertices[2] = vector3(a_pOther->GetMinLocal().x, a_pOther->GetMaxLocal().y, a_pOther->GetMinLocal().z);
-	otherRBVertices[3] = vector3(a_pOther->GetMaxLocal().x, a_pOther->GetMaxLocal().y, a_pOther->GetMinLocal().z);
-	otherRBVertices[4] = vector3(a_pOther->GetMinLocal().x, a_pOther->GetMinLocal().y, a_pOther->GetMaxLocal().z);
-	otherRBVertices[5] = vector3(a_pOther->GetMaxLocal().x, a_pOther->GetMinLocal().y, a_pOther->GetMaxLocal().z);
-	otherRBVertices[6] = vector3(a_pOther->GetMinLocal().x, a_pOther->GetMaxLocal().y, a_pOther->GetMaxLocal().z);
-	otherRBVertices[7] = a_pOther->GetMaxLocal();
+	//following copied from "Real-Time Collision Detection" by Christer Ericson
 
-	//convert corners to global space
-	for (int i = 0; i < 8; i++)
-	{
-		thisRBVertices[i] = vector3(m_m4ToWorld * vector4(thisRBVertices[i], 0.0f));
-		otherRBVertices[i] = vector3(a_pOther->GetModelMatrix() * vector4(otherRBVertices[i], 0.0f));
-	}
-
-	//find all fifteen axes to check
-	vector3 axes[15];
-	//  find each of the three axes per rigidy body
-	axes[0] = vector3(m_v3MaxL.x, m_v3Center.y, m_v3Center.z);
-	axes[1] = vector3(m_v3Center.x, m_v3MaxL.y, m_v3Center.z);
-	axes[2] = vector3(m_v3Center.x, m_v3Center.y, m_v3MaxL.z);
-	axes[3] = vector3(a_pOther->GetMaxLocal().x, a_pOther->GetCenterLocal().y, a_pOther->GetCenterLocal().z);
-	axes[4] = vector3(a_pOther->GetCenterLocal().x, a_pOther->GetMaxLocal().y, a_pOther->GetCenterLocal().z);
-	axes[5] = vector3(a_pOther->GetCenterLocal().x, a_pOther->GetCenterLocal().y, a_pOther->GetMaxLocal().z);
-
-	//convert axes to global space
+	//find rotation matrix from B's space to A's space
 	for (int i = 0; i < 3; i++)
 	{
-		axes[i] = glm::normalize(vector3(m_m4ToWorld * vector4(axes[i], 0.0f)));
-		axes[i + 3] = glm::normalize(vector3(a_pOther->GetModelMatrix() * vector4(axes[i + 3], 0.0f)));
-	}
-
-	//  find cross products of each rigidbody's set of three
-	int thisIndex = 6;
-	for (int i = 0; i < 3; i++) 
-	{
-		for (int j = 3; j < 6; j++) 
+		for (int j = 0; j < 3; j++)
 		{
-			axes[thisIndex] = glm::normalize(glm::cross(axes[i], axes[j]));
-
-			thisIndex++;
+			//create rotation matrix
+			rotationBtoA[i][j] = glm::dot(axesA[i], axesB[j]);
 		}
 	}
 
-	//check each axis for collision
-	for (uint i = 0; i < 15; i++)
-	{
-		//  find  min/max projection for each rigid body onto axis
-		float thisMin = glm::dot(thisRBVertices[0], axes[i]);
-		float thisMax = glm::dot(thisRBVertices[0], axes[i]);
-		float otherMin = glm::dot(otherRBVertices[0], axes[i]);
-		float otherMax = glm::dot(otherRBVertices[0], axes[i]);
+	// Compute translation vector 
+	vector3 centerA = vector3(vector4(m_v3Center, 0.0f) * m_m4ToWorld);
+	vector3 centerB = vector3(vector4(a_pOther->GetCenterLocal(), 0.0f) * a_pOther->GetModelMatrix());
+	vector3 translationVector = centerB - centerA;
 
-		for (int j = 1; j < 8; j++)
-		{
-			float thisTest = glm::dot(thisRBVertices[j], axes[i]);
-			float otherTest = glm::dot(otherRBVertices[j], axes[i]);
+	std::cout << "(" << centerB.x << ", " << centerB.y << ", " << centerB.z << ") - \n("
+		<< centerA.x << ", " << centerA.y << ", " << centerA.z << ") = \n("
+		<< translationVector.x << ", " << translationVector.y << ", " << translationVector.z << ")\n\n";
 
-			if (thisTest > thisMax)
-				thisMax = thisTest;
-			else if (thisTest < thisMin)
-				thisMin = thisTest;
+	// Bring translation into a's coordinate frame
+	translationVector = vector3(dot(translationVector, axesA[0]), dot(translationVector, axesA[1]), dot(translationVector, axesA[2]));
 
-			if (otherTest > otherMax)
-				otherMax = otherTest;
-			else if (otherTest < otherMin)
-				otherMin = otherTest;
-		}
+	// Compute common subexpressions. Add in an epsilon term to
+	// counteract arithmetic errors when two edges are parallel and
+	// their cross product is (near) null (see text for details)
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			absRotationBtoA[i][j] = abs(rotationBtoA[i][j]) + epsilon;
 
-		//check for gap between projections
-		if (thisMax < otherMin || otherMax < otherMin)
-		{
-			//no overlap returns the plane, otherwise continue testing
-			return i + 1;
-		}
+	// Test axes L = A0, L = A1, L = A2
+	for (int i = 0; i < 3; i++) {
+		radiusA = extentsA[i];
+		radiusB = extentsB[0] * absRotationBtoA[i][0] + extentsB[1] * absRotationBtoA[i][1] + extentsB[2] * absRotationBtoA[i][2];
+		if (abs(translationVector[i]) > radiusA + radiusB) return 1;
 	}
+
+	// Test axes L = B0, L = B1, L = B2
+	for (int i = 0; i < 3; i++) {
+		radiusA = extentsA[0] * absRotationBtoA[0][i] + extentsA[1] * absRotationBtoA[1][i] + extentsA[2] * absRotationBtoA[2][i];
+		radiusB = extentsB[i];
+		if (abs(translationVector[0] * rotationBtoA[0][i] + translationVector[1] * rotationBtoA[1][i] + translationVector[2] * rotationBtoA[2][i]) > radiusA + radiusB) return 1;
+	}
+
+	// Test axis L = A0 x B0
+	radiusA = extentsA[1] * absRotationBtoA[2][0] + extentsA[2] * absRotationBtoA[1][0];
+	radiusB = extentsB[1] * absRotationBtoA[0][2] + extentsB[2] * absRotationBtoA[0][1];
+	if (abs(translationVector[2] * rotationBtoA[1][0] - translationVector[1] * rotationBtoA[2][0]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A0 x B1
+	radiusA = extentsA[1] * absRotationBtoA[2][1] + extentsA[2] * absRotationBtoA[1][1];
+	radiusB = extentsB[0] * absRotationBtoA[0][2] + extentsB[2] * absRotationBtoA[0][0];
+	if (abs(translationVector[2] * rotationBtoA[1][1] - translationVector[1] * rotationBtoA[2][1]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A0 x B2
+	radiusA = extentsA[1] * absRotationBtoA[2][2] + extentsA[2] * absRotationBtoA[1][2];
+	radiusB = extentsB[0] * absRotationBtoA[0][1] + extentsB[1] * absRotationBtoA[0][0];
+	if (abs(translationVector[2] * rotationBtoA[1][2] - translationVector[1] * rotationBtoA[2][2]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A1 x B0
+	radiusA = extentsA[0] * absRotationBtoA[2][0] + extentsA[2] * absRotationBtoA[0][0];
+	radiusB = extentsB[1] * absRotationBtoA[1][2] + extentsB[2] * absRotationBtoA[1][1];
+	if (abs(translationVector[0] * rotationBtoA[2][0] - translationVector[2] * rotationBtoA[0][0]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A1 x B1
+	radiusA = extentsA[0] * absRotationBtoA[2][1] + extentsA[2] * absRotationBtoA[0][1];
+	radiusB = extentsB[0] * absRotationBtoA[1][2] + extentsB[2] * absRotationBtoA[1][0];
+	if (abs(translationVector[0] * rotationBtoA[2][1] - translationVector[2] * rotationBtoA[0][1]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A1 x B2
+	radiusA = extentsA[0] * absRotationBtoA[2][2] + extentsA[2] * absRotationBtoA[0][2];
+	radiusB = extentsB[0] * absRotationBtoA[1][1] + extentsB[1] * absRotationBtoA[1][0];
+	if (abs(translationVector[0] * rotationBtoA[2][2] - translationVector[2] * rotationBtoA[0][2]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A2 x B0
+	radiusA = extentsA[0] * absRotationBtoA[1][0] + extentsA[1] * absRotationBtoA[0][0];
+	radiusB = extentsB[1] * absRotationBtoA[2][2] + extentsB[2] * absRotationBtoA[2][1];
+	if (abs(translationVector[1] * rotationBtoA[0][0] - translationVector[0] * rotationBtoA[1][0]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A2 x B1
+	radiusA = extentsA[0] * absRotationBtoA[1][1] + extentsA[1] * absRotationBtoA[0][1];
+	radiusB = extentsB[0] * absRotationBtoA[2][2] + extentsB[2] * absRotationBtoA[2][0];
+	if (abs(translationVector[1] * rotationBtoA[0][1] - translationVector[0] * rotationBtoA[1][1]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A2 x B2
+	radiusA = extentsA[0] * absRotationBtoA[1][2] + extentsA[1] * absRotationBtoA[0][2];
+	radiusB = extentsB[0] * absRotationBtoA[2][1] + extentsB[1] * absRotationBtoA[2][0];
+	if (abs(translationVector[1] * rotationBtoA[0][2] - translationVector[0] * rotationBtoA[1][2]) > radiusA + radiusB) return 1;
 
 	//there is no axis test that separates this two objects
 	return eSATResults::SAT_NONE;
