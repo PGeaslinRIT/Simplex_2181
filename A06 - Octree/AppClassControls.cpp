@@ -1,4 +1,8 @@
 #include "AppClass.h"
+
+//TEMP
+#include <iostream>
+
 using namespace Simplex;
 //Mouse
 void Application::ProcessMouseMovement(sf::Event a_event)
@@ -113,38 +117,41 @@ void Application::ProcessKeyReleased(sf::Event a_event)
 		break;
 	case sf::Keyboard::PageUp:
 		++m_uOctantID;
-		/*
-		if (m_uOctantID >= m_pRoot->GetOctantCount())
-			m_uOctantID = - 1;
-		*/
+		
+		if (m_uOctantID >= m_pRootOctant->GetOctantCount())
+			m_uOctantID = 0;
 		break;
 	case sf::Keyboard::PageDown:
 		--m_uOctantID;
-		/*
-		if (m_uOctantID >= m_pRoot->GetOctantCount())
-			m_uOctantID = - 1;
-		*/
+
+		if (m_uOctantID >= m_pRootOctant->GetOctantCount())
+			m_uOctantID = 0;
 		break;
+	case sf::Keyboard::P:
 	case sf::Keyboard::Add:
+		std::cout << "press add" << std::endl;
 		if (m_uOctantLevels < 4)
 		{
 			m_pEntityMngr->ClearDimensionSetAll();
 			++m_uOctantLevels;
-			/*
-			SafeDelete(m_pRoot);
-			m_pRoot = new MyOctant(m_uOctantLevels, 5);
-			*/
+
+			std::cout << "Expanding octree to " << m_uOctantLevels << " levels." << std::endl;
+			
+			SafeDelete(m_pRootOctant);
+			m_pRootOctant = new MyOctant(m_uOctantLevels, 5);
 		}
 		break;
 	case sf::Keyboard::Subtract:
+		std::cout << "press subtract" << std::endl;
 		if (m_uOctantLevels > 0)
 		{
 			m_pEntityMngr->ClearDimensionSetAll();
 			--m_uOctantLevels;
-			/*
-			SafeDelete(m_pRoot);
-			m_pRoot = new MyOctant(m_uOctantLevels, 5);
-			*/
+
+			std::cout << "Contracting octree to " << m_uOctantLevels << " levels." << std::endl;
+
+			SafeDelete(m_pRootOctant);
+			m_pRootOctant = new MyOctant(m_uOctantLevels, 5);
 		}
 		break;
 	case sf::Keyboard::LShift:
