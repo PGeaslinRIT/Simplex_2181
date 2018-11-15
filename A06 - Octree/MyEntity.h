@@ -157,7 +157,12 @@ public:
 	OUTPUT: shares at least one dimension?
 	*/
 	bool SharesDimension(MyEntity* const a_pOther);
-
+	/*
+	USAGE: returns the number of dimensions this is in
+	ARGUMENTS: ---
+	OUTPUT: number of dimensions
+	*/
+	uint GetDimensionCount(void);
 	/*
 	USAGE: Clears the collision list of this entity
 	ARGUMENTS: ---

@@ -129,13 +129,6 @@ namespace Simplex
 		*/
 		void Display(uint a_nIndex, vector3 a_v3Color = C_YELLOW);
 		/*
-		USAGE: Displays the MyOctant volume and any of its descendents
-		ARGUMENTS:
-		- vector3 a_v3Color = REYELLOW -> Color of the volume to display.
-		OUTPUT: ---
-		*/
-		void DisplayWithChildren(vector3 a_v3Color = C_YELLOW);
-		/*
 		USAGE: Displays the MyOctant volume in the color specified
 		ARGUMENTS:
 		- vector3 a_v3Color = REYELLOW -> Color of the volume to display.

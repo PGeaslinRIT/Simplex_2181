@@ -226,13 +226,20 @@ bool Simplex::MyEntity::SharesDimension(MyEntity* const a_pOther)
 		for (uint j = 0; j < a_pOther->m_nDimensionCount; j++)
 		{
 			if (m_DimensionArray[i] == a_pOther->m_DimensionArray[j])
+			{
+				//std::cout << i << " is shared" << std::endl;
+
 				return true; //as soon as we find one we know they share dimensionality
+			}
 		}
 	}
 
 	//could not find a common dimension
 	return false;
 }
+
+uint Simplex::MyEntity::GetDimensionCount(void) { return m_nDimensionCount; }
+
 bool Simplex::MyEntity::IsColliding(MyEntity* const other)
 {
 	//if not in memory return
@@ -242,7 +249,9 @@ bool Simplex::MyEntity::IsColliding(MyEntity* const other)
 	//if the entities are not living in the same dimension
 	//they are not colliding
 	if (!SharesDimension(other))
+	{
 		return false;
+	}
 
 	return m_pRigidBody->IsColliding(other->GetRigidBody());
 }

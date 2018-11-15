@@ -19,6 +19,9 @@ MyOctant::MyOctant(uint a_nMaxLevel, uint a_nIdealEntityCount)
 	//set itself as root
 	m_pRoot = this;
 
+	//set default dimensions
+	SetSizePos(vector3(0.0f), 72.0f);
+
 	//get all entities this is colliding with
 	for (uint i = 0; i < m_pEntityMngr->GetEntityCount(); i++)
 	{
@@ -182,8 +185,7 @@ vector3 MyOctant::GetMaxGlobal(void)
 bool MyOctant::IsColliding(uint a_uRBIndex)
 {
 	//get rigidbody of given entity
-	MyEntity* tempEntity = m_pEntityMngr->GetEntity(a_uRBIndex);
-	MyRigidBody* tempBody = tempEntity->GetRigidBody();
+	MyRigidBody* tempBody = m_pEntityMngr->GetEntity(a_uRBIndex)->GetRigidBody();
 
 	//collision flag
 	bool bColliding = true;
@@ -219,7 +221,7 @@ void MyOctant::Display(uint a_nIndex, vector3 a_v3Color)
 	if (m_uID == a_nIndex)
 	{
 		//display this octant and all its descendents
-		DisplayWithChildren(a_v3Color);
+		Display(a_v3Color);
 	}
 	else if (!IsLeaf())
 	{
@@ -230,25 +232,20 @@ void MyOctant::Display(uint a_nIndex, vector3 a_v3Color)
 		}
 	}
 }
-void MyOctant::DisplayWithChildren(vector3 a_v3Color) 
-{
-	//display this octant
-	Display(a_v3Color);
-
-	//if this octant has children, display them and their children as well
-	if (!IsLeaf())
-	{
-		for (uint i = 0; i < m_uChildren; i++) 
-		{
-			DisplayWithChildren(a_v3Color);
-		}
-	}
-}
 
 void MyOctant::Display(vector3 a_v3Color)
 {
 	//draw wire mesh around this octant
-	m_pMeshMngr->AddWireCubeToRenderList(ToMatrix4(m_v3Center) * glm::scale((m_v3Max - m_v3Min)), a_v3Color);
+	m_pMeshMngr->AddWireCubeToRenderList(glm::translate(m_v3Center) *glm::scale((m_v3Max - m_v3Min)), a_v3Color);
+
+	//display children
+	if (!IsLeaf())
+	{
+		for (uint i = 0; i < m_uChildren; i++)
+		{
+			m_pChild[i]->Display(a_v3Color);
+		}
+	}
 }
 
 void MyOctant::DisplayLeafs(vector3 a_v3Color)
@@ -287,41 +284,39 @@ void MyOctant::Subdivide(void)
 		m_uChildren = 8;
 
 		//get new centers
+		float quarterSize = m_fSize / 4.0f;
+
 		vector3 newCenters[8];
-		newCenters[0] = m_v3Center + (m_v3Max - m_v3Center) / 2.0f;
-		newCenters[0] = m_v3Center + (vector3(m_v3Max.x, m_v3Max.y, m_v3Min.z) - m_v3Center) / 2.0f;
-		newCenters[0] = m_v3Center + (vector3(m_v3Max.x, m_v3Min.y, m_v3Max.z) - m_v3Center) / 2.0f;
-		newCenters[0] = m_v3Center + (vector3(m_v3Min.x, m_v3Max.y, m_v3Max.z) - m_v3Center) / 2.0f;
-		newCenters[0] = m_v3Center + (vector3(m_v3Min.x, m_v3Min.y, m_v3Max.z) - m_v3Center) / 2.0f;
-		newCenters[0] = m_v3Center + (vector3(m_v3Min.x, m_v3Max.y, m_v3Min.z) - m_v3Center) / 2.0f;
-		newCenters[0] = m_v3Center + (vector3(m_v3Max.x, m_v3Min.y, m_v3Min.z) - m_v3Center) / 2.0f;
-		newCenters[0] = m_v3Center + (m_v3Min - m_v3Center) / 2.0f;
+		newCenters[0] = m_v3Center + vector3( quarterSize,  quarterSize,  quarterSize);
+		newCenters[1] = m_v3Center + vector3(-quarterSize,  quarterSize,  quarterSize);
+		newCenters[2] = m_v3Center + vector3( quarterSize, -quarterSize,  quarterSize);
+		newCenters[3] = m_v3Center + vector3( quarterSize,  quarterSize, -quarterSize);
+		newCenters[4] = m_v3Center + vector3( quarterSize, -quarterSize, -quarterSize);
+		newCenters[5] = m_v3Center + vector3(-quarterSize,  quarterSize, -quarterSize);
+		newCenters[6] = m_v3Center + vector3(-quarterSize, -quarterSize,  quarterSize);
+		newCenters[7] = m_v3Center + vector3(-quarterSize, -quarterSize, -quarterSize);
 
 		//create eight children
 		for (uint i = 0; i < m_uChildren; i++)
 		{
 			//determine size and center of child
-			vector3 childCenter = newCenters[i];
 			float childSize = m_fSize / 2.0f;
 
 			//create the child
-			MyOctant* childOctant = new MyOctant(childCenter, childSize);
+			m_pChild[i] = new MyOctant(newCenters[i], childSize);
 
 			//set this octant as the child's parent and pass on root octant
-			childOctant->m_pParent = this;
-			childOctant->m_pRoot = m_pRoot;
+			m_pChild[i]->m_pParent = this;
+			m_pChild[i]->m_pRoot = m_pRoot;
 
 			//set child's level
-			childOctant->m_uLevel = m_uLevel + 1;
+			m_pChild[i]->m_uLevel = m_uLevel + 1;
 
-			//check for entities in the child
-			for (uint i = 0; i < m_EntityList.size(); i++)
+			//check for entities in the parent that collide with the child
+			for (uint j = 0; j < m_EntityList.size(); j++)
 			{
-				childOctant->IsColliding(m_EntityList[i]);
+				m_pChild[i]->IsColliding(m_EntityList[j]);
 			}
-
-			//add the child to the list
-			m_pChild[i] = childOctant;
 		}
 	}
 	else
@@ -390,6 +385,9 @@ void MyOctant::ConstructTree(uint a_nMaxLevel)
 		m_pRoot->Subdivide();
 	}
 
+	//clear alll entities of dimensions
+	m_pEntityMngr->ClearDimensionSetAll();
+
 	m_pRoot->AssignIDtoEntity();
 	m_pRoot->ConstructList();
 }
@@ -397,17 +395,18 @@ void MyOctant::ConstructTree(uint a_nMaxLevel)
 void MyOctant::AssignIDtoEntity(void)
 {
 	//check if this is a leaf
-	if (IsLeaf() && m_EntityList.size() > 0)
+	if (IsLeaf())
 	{
-		//if this is a leaf that collides with entities, add this octant's ID as a dimension
+		//add this octants id as a dimension to each entity it contains
 		for (uint i = 0; i < m_EntityList.size(); i++)
 		{
+			std::cout << "Entity " << m_EntityList[i] << " is in octant " << m_uID << std::endl;
 			m_pEntityMngr->AddDimension(m_EntityList[i], m_uID);
 		}
 	}
-	else if (!IsLeaf())
+	else
 	{
-		//if this has children, have the children assign their IDs to entities
+		//if this has children, check the children
 		for (uint i = 0; i < m_uChildren; i++)
 		{
 			m_pChild[i]->AssignIDtoEntity();
@@ -420,16 +419,15 @@ uint MyOctant::GetOctantCount()
 	return m_uOctantCount;
 }
 
-//NOT SURE THIS IS FUNCTIONING
 void MyOctant::ConstructList(void)
 {
-	//check that this is a leaf
-	if (IsLeaf())
+	//check that this is a leaf and that it has entities
+	if (IsLeaf() && m_EntityList.size() > 0)
 	{
 		//if a leaf with entities, add itself to the list of leaves with entities
 		m_pRoot->m_lChild.push_back(this);
 	}
-	else if (m_EntityList.size() > 0)
+	else
 	{
 		//if not a leaf, check children
 		for (uint i = 0; i < m_uChildren; i++)
